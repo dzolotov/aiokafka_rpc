@@ -1,11 +1,13 @@
-import io
-import traceback
-import functools
-import msgpack
 import asyncio
+import functools
+import io
 import logging
-from kafka.common import KafkaError
+import traceback
+
+import msgpack
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
+from kafka.common import KafkaError
+
 from aiokafka_rpc.client import get_msgpack_hooks
 
 
@@ -31,6 +33,7 @@ class AIOKafkaRPC(object):
 
         self.__producer = AIOKafkaProducer(
             bootstrap_servers=kafka_servers, loop=loop,
+            enable_idempotence=True,
             key_serializer=lambda x: x.encode("utf-8"),
             value_serializer=lambda x: msgpack.packb(x, default=default))
 
