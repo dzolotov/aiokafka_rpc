@@ -6,7 +6,7 @@ import traceback
 
 import msgpack
 from aiokafka import AIOKafkaConsumer, AIOKafkaProducer
-from kafka.common import KafkaError
+from kafka.errors import KafkaError
 
 from aiokafka_rpc.client import get_msgpack_hooks
 
