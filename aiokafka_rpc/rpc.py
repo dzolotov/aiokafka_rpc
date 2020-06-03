@@ -34,7 +34,7 @@ class AIOKafkaRPC(object):
 
         self.__producer = AIOKafkaProducer(
             bootstrap_servers=kafka_servers, loop=loop,
-            enable_idempotence=True,
+            enable_idempotence=False,
             max_request_size = max_bytes,
             key_serializer=lambda x: x.encode("utf-8"),
             value_serializer=lambda x: msgpack.packb(x, default=default))
