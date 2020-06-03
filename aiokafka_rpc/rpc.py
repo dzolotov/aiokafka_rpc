@@ -15,18 +15,19 @@ class AIOKafkaRPC(object):
     log = logging.getLogger(__name__)
 
     def __init__(self, rpc_obj, kafka_servers='localhost:9092',
-                 in_topic='aiokafkarpc_in', out_topic='aiokafkarpc_out',
+                 in_topic='aiokafkarpc_in', out_topic='aiokafkarpc_out', max_bytes = 1048576,
                  translation_table=[], *, loop):
         self._tasks = {}
         self._loop = loop
         self._topic_out = out_topic
         self._rpc_obj = rpc_obj
         self._res_queue = asyncio.Queue(loop=loop)
-
+        
         default, ext_hook = get_msgpack_hooks(translation_table)
         self.__consumer = AIOKafkaConsumer(
             in_topic, loop=loop, bootstrap_servers=kafka_servers,
             group_id=in_topic + '-group',
+            fetch_max_bytes = max_bytes,
             key_deserializer=lambda x: x.decode("utf-8"),
             value_deserializer=lambda x: msgpack.unpackb(
                 x, ext_hook=ext_hook, encoding="utf-8"))
@@ -34,6 +35,7 @@ class AIOKafkaRPC(object):
         self.__producer = AIOKafkaProducer(
             bootstrap_servers=kafka_servers, loop=loop,
             enable_idempotence=True,
+            max_request_size = max_bytes,
             key_serializer=lambda x: x.encode("utf-8"),
             value_serializer=lambda x: msgpack.packb(x, default=default))
 
