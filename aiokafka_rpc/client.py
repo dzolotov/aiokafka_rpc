@@ -49,6 +49,7 @@ class AIOKafkaRPCClient(object):
         self.__producer = AIOKafkaProducer(
             bootstrap_servers=kafka_servers, loop=loop,
             max_request_size = max_bytes,
+            enable_idempotence=False,
             key_serializer=lambda x: x.encode("utf-8"),
             value_serializer=lambda x: msgpack.packb(x, default=default))
 
