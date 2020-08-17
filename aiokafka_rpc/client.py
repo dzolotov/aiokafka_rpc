@@ -28,6 +28,7 @@ class AIOKafkaRPCClient(object):
     def __init__(self, kafka_servers='localhost:9092',
                  in_topic='aiokafkarpc_in',
                  out_topic='aiokafkarpc_out', out_partitions=(0,),
+                 max_bytes = 1048576,
                  translation_table=[], *, loop):
         self.call = CallObj(self._call_wrapper)
 
@@ -43,6 +44,7 @@ class AIOKafkaRPCClient(object):
             self._out_topic,
             loop=loop, bootstrap_servers=kafka_servers,
             group_id=None,
+            fetch_max_bytes = max_bytes,
             key_deserializer=lambda x: x.decode("utf-8"),
             enable_auto_commit=False,
             value_deserializer=lambda x: msgpack.unpackb(
@@ -50,6 +52,8 @@ class AIOKafkaRPCClient(object):
 
         self.__producer = AIOKafkaProducer(
             bootstrap_servers=kafka_servers, loop=loop,
+            max_request_size = max_bytes,
+            enable_idempotence=False,
             key_serializer=lambda x: x.encode("utf-8"),
             value_serializer=lambda x: msgpack.packb(x, default=default))
 
