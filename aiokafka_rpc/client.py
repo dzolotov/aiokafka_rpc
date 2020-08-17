@@ -120,5 +120,5 @@ class AIOKafkaRPCClient(object):
                     fut.set_exception(RPCError(response["error"]))
                 else:
                     fut.set_result(response["result"])
-                await asyncio.sleep(2)
+                logging.info("Commit message")
                 await self.__consumer.commit()
