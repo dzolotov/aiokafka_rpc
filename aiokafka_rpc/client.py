@@ -44,9 +44,9 @@ class AIOKafkaRPCClient(object):
             self._out_topic,
             loop=loop, bootstrap_servers=kafka_servers,
             group_id=None,
-            fetch_max_bytes = max_bytes,
+            fetch_max_bytes=max_bytes,
             key_deserializer=lambda x: x.decode("utf-8"),
-            enable_auto_commit=False,
+            enable_auto_commit=True,
             value_deserializer=lambda x: msgpack.unpackb(
                 x, ext_hook=ext_hook, encoding="utf-8"))
 
@@ -107,18 +107,15 @@ class AIOKafkaRPCClient(object):
     async def __consume_routine(self):
         while True:
             message = await self.__consumer.getone()
-            async with self.lock:
-                call_id = message.key
-                response = message.value
-                self.call = CallObj(self._call_wrapper)
+            call_id = message.key
+            response = message.value
+            self.call = CallObj(self._call_wrapper)
 
-                fut = self._waiters.get(call_id)
-                if fut is None:
-                    continue
-                if "error" in response:
-                    self.log.debug(response.get("stacktrace"))
-                    fut.set_exception(RPCError(response["error"]))
-                else:
-                    fut.set_result(response["result"])
-                logging.info("Commit message")
-                await self.__consumer.commit()
+            fut = self._waiters.get(call_id)
+            if fut is None:
+                continue
+            if "error" in response:
+                self.log.debug(response.get("stacktrace"))
+                fut.set_exception(RPCError(response["error"]))
+            else:
+                fut.set_result(response["result"])
