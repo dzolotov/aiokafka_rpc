@@ -37,30 +37,28 @@ class AIOKafkaRPC(object):
             key_serializer=lambda x: x.encode("utf-8"),
             value_serializer=lambda x: msgpack.packb(x, default=default))
 
-    @asyncio.coroutine
-    def run(self):
-        yield from self.__producer.start()
-        yield from self.__consumer.start()
+    async def run(self):
+        await self.__producer.start()
+        await self.__consumer.start()
         self._consume_task = self._loop.create_task(self.__consume_routine())
         self._produce_task = self._loop.create_task(self.__produce_routine())
 
-    @asyncio.coroutine
-    def close(self, timeout=10):
+    async def close(self, timeout=10):
         self._consume_task.cancel()
         try:
-            yield from self._consume_task
+            await self._consume_task
         except asyncio.CancelledError:
             pass
 
         if self._tasks:
-            yield from asyncio.wait(
+            await asyncio.wait(
                 self._tasks.values(), loop=self._loop, timeout=timeout)
 
         self._res_queue.put_nowait((None, None, None))
-        yield from self._produce_task
+        await self._produce_task
 
-        yield from self.__producer.stop()
-        yield from self.__consumer.stop()
+        await self.__producer.stop()
+        await self.__consumer.stop()
 
     def __send_result(self, call_id, ptid, result=None, err=None):
         if err is not None:
@@ -79,24 +77,22 @@ class AIOKafkaRPC(object):
         except Exception as err:
             self.__send_result(call_id, ptid, err=err)
 
-    @asyncio.coroutine
-    def __produce_routine(self):
+    async def __produce_routine(self):
         while True:
-            call_id, ptid, res = yield from self._res_queue.get()
+            call_id, ptid, res = await self._res_queue.get()
             if call_id is None:
                 break
             try:
-                yield from self.__producer.send(
+                await self.__producer.send(
                     self._topic_out, res, key=call_id, partition=ptid)
             except KafkaError as err:
                 self.log.error("send RPC response failed: %s", err)
             except Exception as err:
                 self.__send_result(call_id, err=err)
 
-    @asyncio.coroutine
-    def __consume_routine(self):
+    async def __consume_routine(self):
         while True:
-            message = yield from self.__consumer.getone()
+            message = await self.__consumer.getone()
             call_id = message.key
             method_name, args, kw_args, ptid = message.value
             try:
